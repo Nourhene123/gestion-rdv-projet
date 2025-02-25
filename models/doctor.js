@@ -1,13 +1,8 @@
 const mongoose = require('mongoose');
+const User = require('../models/user');
+const Doctor = User.discriminator('doctor', new mongoose.Schema({
+    specialite: { type: String },
+    tarif: { type: Number }
+}));
 
-const doctorSchema = new mongoose.Schema({
-    nom: { type: String },
-    email: { required: true, unique: true, type: String },
-    password: { type: String, required: true },
-    role: { type: String, default: 'doctor' }, 
-    specialite: { type: String }, 
-    tarif: { type: Number }, 
- 
-}, { timestamps: true });
-
-module.exports = mongoose.model('Doctor', doctorSchema);
+module.exports = Doctor;

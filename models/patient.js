@@ -1,13 +1,9 @@
 const mongoose = require('mongoose');
+const User = require('../models/user'); // Import du modèle User
 
-const patientSchema = new mongoose.Schema({
-    nom: { type: String },
-    email: { required: true, unique: true, type: String },
-    password: { type: String, required: true },
-    role: { type: String, default: 'patient' }, 
-    telephone: { type: String }, 
-    adresse: { type: String }, 
-   
-}, { timestamps: true });
+const Patient = User.discriminator('patient', new mongoose.Schema({
+    telephone: { type: String },
+    adresse: { type: String }
+}));
 
-module.exports = mongoose.model('Patient', patientSchema);
+module.exports = Patient;

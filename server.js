@@ -1,77 +1,80 @@
+require("dotenv").config(); // Charger les variables d'environnement AVANT d'importer d'autres modules
+
 const express = require("express");
 const mongoose = require("mongoose");
-require("dotenv").config();
 const session = require("express-session");
-const cors = require("cors"); // Ajout de CORS
+const cors = require("cors");
+
 const authRoutes = require("./routes/auth.routes");
+const frontRoutes = require("./routes/front.routes");
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // Permet d'utiliser un port dynamique (ex: en production)
 
-// Vérification des variables d'environnement
+// 🚀 Vérification des variables d'environnement
 if (!process.env.MONGO_URL || !process.env.JWT_SECRET) {
-  console.error("Erreur : MONGO_URL ou JWT_SECRET n'est pas défini dans le fichier .env");
+  console.error(" Erreur : MONGO_URL ou JWT_SECRET n'est pas défini dans le fichier .env");
   process.exit(1);
 }
 
-// Configuration du moteur de template EJS
+//  Configuration du moteur de template EJS
 app.set("view engine", "ejs");
 
-// Middleware
+// 🛠️ Middlewares
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // Remplacement de bodyParser.json() par express.json()
+app.use(express.json()); // Remplace bodyParser.json()
 
-// Configuration de CORS
+//  Configuration CORS (ajouter plus d'origines si nécessaire)
 app.use(
   cors({
-    origin: "http://localhost:3000", // Autoriser uniquement le frontend
-    methods: ["GET", "POST", "PUT", "DELETE"], // Méthodes HTTP autorisées
-    credentials: true, // Autoriser les cookies et les credentials
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
   })
 );
 
-// Configuration des sessions
+//  Configuration des sessions
 app.use(
   session({
-    secret: process.env.JWT_SECRET || "secret-key", // Utiliser JWT_SECRET pour la clé secrète
+    secret: process.env.SESSION_SECRET || process.env.JWT_SECRET || "secret-key",
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     cookie: {
-      secure: false, // À mettre à `true` en production avec HTTPS
-      httpOnly: true, // Empêcher l'accès au cookie via JavaScript
-      maxAge: 1000 * 60 * 60 * 24, // Durée de vie du cookie : 1 jour
+      secure: process.env.NODE_ENV === "production", // Activer HTTPS en production
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24, // 1 jour
     },
   })
 );
 
-// Routes API
+//  Routes API
 app.use("/api/auth", authRoutes);
-
-// Routes pour le front-end
-const frontRoutes = require("./routes/front.routes");
 app.use("/", frontRoutes);
 
-// Gestion des erreurs 404 (Route non trouvée)
+//  Gestion des erreurs 404 (Route non trouvée)
 app.use((req, res, next) => {
   res.status(404).json({ success: false, message: "Route non trouvée" });
 });
 
-// Gestion des erreurs globales
+// Gestion globale des erreurs
 app.use((err, req, res, next) => {
-  console.error("Erreur globale :", err);
-  res.status(500).json({ success: false, message: "Erreur interne du serveur" });
+  console.error(" Erreur serveur :", err);
+  res.status(500).json({ success: false, message: "Erreur interne du serveur", error: err.message });
 });
 
-// Connexion à MongoDB
+// ⚡ Connexion à MongoDB
 mongoose
   .connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("Connecté à MongoDB"))
-  .catch((err) => console.error("Erreur de connexion à MongoDB :", err));
+  .then(() => console.log(" Connecté à MongoDB"))
+  .catch((err) => {
+    console.error(" Erreur de connexion à MongoDB :", err);
+    process.exit(1);
+  });
 
-// Lancement du serveur
+// 🚀 Démarrage du serveur
 app.listen(port, () => {
-  console.log(`Serveur démarré sur http://localhost:${port}`);
+  console.log(` Serveur démarré sur http://localhost:${port}`);
 });
