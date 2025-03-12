@@ -98,16 +98,43 @@ router.get("/dashboard", async (req, res) => {
   }
 });
 
-// Récupérer tous les rendez-vous
 router.get('/appointments', auth, async (req, res) => {
   try {
-    const appointments = await Appointment.find().populate('doctor').populate('patient');
-    res.status(200).json({ success: true, data: appointments });
+      if (!req.user || !req.user.userId) {
+          return res.status(401).json({ success: false, message: 'Utilisateur non authentifié.' });
+      }
+
+      const appointments = await Appointment.find({ patient: req.user.userId })
+          .populate('doctor')
+          .populate('patient');
+
+      res.status(200).json({ success: true, data: appointments });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Erreur serveur", error: error.message });
+      console.error('Erreur lors de la récupération des rendez-vous :', error);
+      res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
   }
 });
 
+// Nouvelle route : Récupérer un rendez-vous spécifique par ID (sans restriction d'utilisateur)
+router.get('/appointments/:id', auth, async (req, res) => {
+  try {
+      const appointmentId = req.params.id; // Récupérer l'ID depuis les paramètres de l'URL
+
+      // Trouver le rendez-vous par ID, sans vérifier l'utilisateur connecté
+      const appointment = await Appointment.findById(appointmentId)
+          .populate('doctor') // Peupler les détails du médecin
+          .populate('patient'); // Peupler les détails du patient
+
+      if (!appointment) {
+          return res.status(404).json({ success: false, message: 'Rendez-vous non trouvé.' });
+      }
+
+      res.status(200).json({ success: true, data: appointment });
+  } catch (error) {
+      console.error('Erreur lors de la récupération du rendez-vous par ID :', error);
+      res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+  }
+});
 router.post('/appointments', auth, async (req, res) => {
   try {
     const { appointmentDate, notes, doctorId } = req.body;
