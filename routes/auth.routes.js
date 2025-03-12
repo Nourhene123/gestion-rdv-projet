@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../Controller/auth.controllers'); // Importation du contrôleur
 
-// Définir les routes pour l'inscription et la connexion
-router.post('/register', authController.register);  // Gérer l'inscription
-router.post('/login', authController.login);        // Gérer la connexion
+
+router.post('/register', authController.register);  
+router.post('/login', authController.login);  
+router.post("/refresh", authController.refreshToken);      
 
 // Routes pour l'affichage des formulaires (facultatif si tu utilises des vues)
 router.get("/register", (req, res) => {
@@ -18,5 +19,6 @@ router.get("/login", (req, res) => {
     req.session.message = null;
     res.render("login", { message });
 });
+
 
 module.exports = router;

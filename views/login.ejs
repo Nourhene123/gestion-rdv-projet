@@ -81,7 +81,7 @@
             <h2>Bienvenue</h2>
         </div>
         <div class="right-section">
-            <form action="/login" method="POST">
+            <form id="loginForm">
                 <div style="text-align: center;">
                     <h1>Connexion</h1>
                 </div>
@@ -99,7 +99,54 @@
                 <a href="/register">Pas encore inscrit ? Inscrivez-vous</a>
             </div>
         </div>
-    </div>
+    </div><script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+        
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+        
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+        
+                const result = await response.json();
+                console.log('Réponse de /login:', result);
+        
+                if (result.success) {
+                    localStorage.setItem('accessToken', result.accessToken);
+                    localStorage.setItem('refreshToken', result.refreshToken);
+                    console.log('Tokens stockés:', {
+                        accessToken: localStorage.getItem('accessToken'),
+                        refreshToken: localStorage.getItem('refreshToken')
+                    });
+        
+                    // Vérifie /dashboard avec le token
+                    const dashboardResponse = await fetch('/dashboard', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${result.accessToken}`
+                        }
+                    });
+        
+                    if (dashboardResponse.ok) {
+                        window.location.href = '/dashboard'; // Redirige seulement si OK
+                    } else {
+                        throw new Error('Accès au dashboard refusé');
+                    }
+                } else {
+                    alert(result.message || 'Erreur lors de la connexion.');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la connexion ou du chargement du dashboard :', error);
+                alert('Une erreur est survenue. Veuillez réessayer.');
+            }
+        });
+        </script>
 </body>
-
 </html>
