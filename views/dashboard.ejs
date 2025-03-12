@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accueil - Plateforme Médicale</title>
+    <!-- Inclure Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <style>
+        /* Votre CSS existant reste inchangé */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2d3748;
+            background-color: #f7fafc;
+            line-height: 1.6;
+        }
+
+        /* Navbar */
+        .navbar {
+            background-color: #ffffff;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #3182ce;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 2.5rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #4a5568;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #3182ce;
+        }
+
+        /* Section Bienvenue */
+        .welcome-section {
+            max-width: 1200px;
+            margin: 120px auto 4rem;
+            padding: 0 2rem;
+            text-align: center;
+        }
+
+        .welcome-section h1 {
+            font-size: 2.5rem;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        .welcome-section p {
+            font-size: 1.2rem;
+            color: #718096;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+
+        .cta-button {
+            background-color: #3182ce;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+        .cta-button:hover {
+            background-color: #2b6cb0;
+        }
+
+        /* Section Médecins */
+        .doctors-section {
+            max-width: 1200px;
+            margin: 0 auto 4rem;
+            padding: 0 2rem;
+        }
+
+        .doctors-section h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 3rem;
+            color: #2d3748;
+        }
+
+        .doctors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .doctor-card {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .doctor-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .doctor-card h3 {
+            color: #2d3748;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .doctor-card p {
+            color: #718096;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">MediPlan</div>
+                <ul class="nav-links">
+                    <li><a href="#accueil">Accueil</a></li>
+                    <li><a href="#medecins">Médecins</a></li>
+                    <li><a href="#reservation">Réserver</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </div>
+        </nav>
+    
+        <!-- Section Bienvenue -->
+        <section class="welcome-section">
+            <h1>Bienvenue sur MediPlan</h1>
+            <p>Planifiez votre consultation médicale en toute simplicité. Accès rapide aux meilleurs médecins et réservation en quelques clics.</p>
+            <a href="#reservation" class="cta-button">Réserver un rendez-vous</a>
+        </section>
+  <!-- Section Médecins -->
+<section class="doctors-section">
+    <h2>Nos Médecins</h2>
+    <div class="doctors-grid">
+      <% doctors.forEach(function(doctor) { %>
+        <div class="doctor-card">
+          <h3><%= doctor.nom %></h3>
+          <p><%= doctor.specialite %></p>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#appointmentModal<%= doctor._id %>">
+            Réserver un rendez-vous
+          </button>
+        </div>
+  
+        <!-- Modal for Booking Appointment -->
+        <div class="modal fade" id="appointmentModal<%= doctor._id %>" tabindex="-1" aria-labelledby="appointmentModalLabel<%= doctor._id %>" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="appointmentModalLabel<%= doctor._id %>">Réserver un rendez-vous avec <%= doctor.nom %></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <form class="appointment-form" data-doctor-id="<%= doctor._id %>">
+                  <div class="mb-3">
+                    <label for="patientName<%= doctor._id %>" class="form-label">Votre nom</label>
+                    <input type="text" class="form-control" id="patientName<%= doctor._id %>" name="patientName" value="<%= user ? user.nom : '' %>" readonly>
+                  </div>
+                  <div class="mb-3">
+                    <label for="appointmentDate<%= doctor._id %>" class="form-label">Date et heure</label>
+                    <input type="datetime-local" class="form-control" id="appointmentDate<%= doctor._id %>" name="appointmentDate" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="notes<%= doctor._id %>" class="form-label">Remarques</label>
+                    <textarea class="form-control" id="notes<%= doctor._id %>" name="notes"></textarea>
+                  </div>
+                  <input type="hidden" name="doctorId" value="<%= doctor._id %>">
+                  <button type="submit" class="btn btn-primary">Réserver</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+    <!-- Inclure Bootstrap JS et dépendances -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
+    <!-- Script pour gérer la soumission du formulaire via AJAX -->
+  <script>
+    // Fonction pour rafraîchir le token
+    async function refreshToken() {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+            alert('Session expirée. Veuillez vous reconnecter.');
+            window.location.href = '/login';
+            throw new Error('No refresh token available');
+        }
+
+        try {
+            const response = await fetch('/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                localStorage.setItem('accessToken', result.accessToken);
+                localStorage.setItem('refreshToken', result.refreshToken);
+                return result.accessToken;
+            } else {
+                alert('Session expirée. Veuillez vous reconnecter.');
+                window.location.href = '/login';
+                throw new Error('Refresh token failed');
+            }
+        } catch (error) {
+            console.error('Erreur lors du rafraîchissement du token :', error);
+            window.location.href = '/login';
+            throw error;
+        }
+    }
+
+    // Gestion de la soumission du formulaire
+    document.querySelectorAll('.appointment-form').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const data = {
+                patientName: formData.get('patientName'),
+                appointmentDate: formData.get('appointmentDate'),
+                notes: formData.get('notes'),
+                doctorId: formData.get('doctorId')
+            };
+
+            let token = localStorage.getItem('accessToken');
+
+            if (!token) {
+                alert('Veuillez vous connecter pour réserver un rendez-vous.');
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('/appointments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert('Rendez-vous réservé avec succès !');
+                    const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+                    modal.hide();
+                    form.reset();
+                } else if (response.status === 401) {
+                    // Token expiré, on tente de le rafraîchir
+                    try {
+                        token = await refreshToken();
+                        // Réessayer la requête avec le nouveau token
+                        const retryResponse = await fetch('/appointments', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        const retryResult = await retryResponse.json();
+                        if (retryResponse.ok) {
+                            alert('Rendez-vous réservé avec succès après rafraîchissement !');
+                            const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+                            modal.hide();
+                            form.reset();
+                        } else {
+                            alert(retryResult.message || 'Erreur lors de la réservation.');
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors du retry après refresh :', error);
+                    }
+                } else {
+                    alert(result.message || 'Erreur lors de la réservation.');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue. Veuillez réessayer.');
+            }
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controller/auth.controllers'); // Importation du contrôleur
+const authController = require('../Controller/auth.controllers'); // Importation du contrôleur
 
 // Définir les routes pour l'inscription et la connexion
 router.post('/register', authController.register);  // Gérer l'inscription

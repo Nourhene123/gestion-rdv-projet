@@ -17,12 +17,16 @@ module.exports = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(" Token décodé avec succès :", decoded);
-    
-    req.user = decoded; 
+    console.log("Token décodé avec succès :", decoded);
+
+    // Ajouter la vérification du rôle
+    req.user = decoded;
+    if (!['patient', 'doctor'].includes(decoded.role)) {
+      return res.status(403).json({ message: "Accès interdit : rôle invalide" });
+    }
     next();
   } catch (error) {
-    console.log(" Erreur lors de la vérification du token :", error.message);
+    console.log("Erreur lors de la vérification du token :", error.message);
     res.status(401).json({ message: "Token invalide" });
   }
 };
