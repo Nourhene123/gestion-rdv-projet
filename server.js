@@ -1,16 +1,13 @@
 require("dotenv").config();
-
 const express = require("express");
 const mongoose = require("mongoose");
 const session = require("express-session");
 const cors = require("cors");
+const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth.routes');
-
-const frontRoutes = require("./routes/front.routes");
-
-
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const calendarRoutes = require("./routes/calendarRoutes");
 const appointmentRoutes = require('./routes/appointmentRoutes');
-
 const app = express(); // Initialisation d'Express (doit être avant app.use)
 const port = process.env.PORT || 3000; // Permet d'utiliser un port dynamique (ex: en production)
 
@@ -22,10 +19,12 @@ if (!process.env.MONGO_URL || !process.env.JWT_SECRET) {
 
 //  Configuration du moteur de template EJS
 app.set("view engine", "ejs");
+app.use(cookieParser());
 
 // 🛠️ Middlewares
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // Remplace bodyParser.json()
+app.use(express.json()); 
+app.use(express.static('public'));
 
 //  Configuration CORS (ajouter plus d'origines si nécessaire)
 app.use(
@@ -51,11 +50,13 @@ app.use(
 );
 
 //  Routes API
-app.use("/api/auth", authRoutes);
-app.use("/", frontRoutes);
+app.use("/", authRoutes);
 app.use("/appointments", appointmentRoutes); 
+app.use("/calendar", calendarRoutes);
+app.use("/dashboard", dashboardRoutes);
 
-//  Gestion des erreurs 404 (Route non trouvée)
+
+
 app.use((req, res, next) => {
   res.status(404).json({ success: false, message: "Route non trouvée" });
 });

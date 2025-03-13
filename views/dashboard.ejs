@@ -147,25 +147,38 @@
         }
     </style>
 </head>
+
+
 <body>
     <!-- Navbar -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">MediPlan</div>
+            
             <ul class="nav-links">
                 <li><a href="#accueil">Accueil</a></li>
-                <li><a href="#medecins">Médecins</a></li>
-                <li><a href="#reservation">Réserver</a></li>
                 <li><a href="#my-appointments" id="myAppointmentsLink">Mes Réservations</a></li> 
+                <li><a href="/calendar">Calendrier</a></li>
                 <li><a href="#contact">Contact</a></li>
-                <li><a href="/logout">Déconnexion</a></li> <!-- Add logout link -->
+                <% if (user.role === 'doctor') { %>
+                    <li><a href="/dashboard/doctorDashboard">Docteur Dashboard</a></li>
+                <% } %>
+                <li><a href="/logout">Déconnexion</a></li> 
             </ul>
         </div>
     </nav>
 
     <!-- Section Bienvenue -->
     <section class="welcome-section">
-        <h1>Bienvenue sur MediPlan</h1>
+        <h1>
+            Bienvenue 
+            <% if (user.role === 'patient') { %>
+                Mr <%= user.nom %>
+            <% } else if (user.role === 'doctor') { %>
+                Dr. <%= user.nom %>
+            <% } %>
+            sur MediPlan
+        </h1>
         <p>Planifiez votre consultation médicale en toute simplicité. Accès rapide aux meilleurs médecins et réservation en quelques clics.</p>
         <a href="#reservation" class="cta-button">Réserver un rendez-vous</a>
     </section>
@@ -178,9 +191,12 @@
             <div class="doctor-card">
                 <h3><%= doctor.nom %></h3>
                 <p><%= doctor.specialite %></p>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#appointmentModal<%= doctor._id %>">
+                <% if (user.role === 'patient') { %>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#appointmentModal<%= doctor._id %>">
                     Réserver un rendez-vous
                 </button>
+                    <% } %>
+                
             </div>
 
            <!-- Modal for Booking Appointment -->
@@ -300,7 +316,7 @@
                         }
             
                         try {
-                            const response = await fetch('/appointments', {
+                            const response = await fetch('/appointments/create', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',

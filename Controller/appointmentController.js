@@ -1,30 +1,35 @@
 const Appointment = require('../models/Appointment');
 
+
 // Create Appointment
-exports.createAppointment = (req, res) => {
-  const { doctor, patient, date, status, notes } = req.body;
+exports.createAppointment = async (req, res) => {
+  try {
+    const { appointmentDate, notes, doctorId } = req.body;
 
-  const newAppointment = new Appointment({
-    doctor,
-    patient,
-    date,
-    status,
-    notes
-  });
-
-  newAppointment.save()
-    .then(appointment => {
-      return res.status(201).json({
-        success: true,
-        message: 'Appointment created successfully!',
-        appointment
-      });
-    })
-    .catch(err => {
-      console.error(err);
-      return res.status(500).json({ success: false, message: 'Error creating appointment' });
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({ success: false, message: 'Utilisateur non authentifié.' });
+    }
+    console.log("req.user*************************************************************")
+    console.log(req.body)
+    console.log("appointmentDate",appointmentDate)
+    console.log("notes",notes)
+    console.log("doctorId",doctorId)
+    const newAppointment = new Appointment({
+      doctor: doctorId,
+      patient: req.user.userId, // Use the decoded userId from the token
+      date: new Date(appointmentDate),
+      notes: notes || '',
+      status: 'En attente'
     });
+
+    const savedAppointment = await newAppointment.save();
+    res.status(201).json({ success: true, message: 'Rendez-vous réservé avec succès.', data: savedAppointment });
+  } catch (error) {
+    console.error('Erreur lors de la création du rendez-vous :', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+  }
 };
+
 
 // Get All Appointments
 exports.getAllAppointments = (req, res) => {
@@ -78,4 +83,34 @@ exports.updateAppointmentStatus = (req, res) => {
       console.error(err);
       return res.status(500).json({ success: false, message: 'Error updating appointment' });
     });
+};
+
+
+
+exports.getCalendar = async (req, res) => {
+  
+    try {
+        if (!req.user) {
+            return res.redirect('/login');
+        } 
+        if(req.user.role === 'patient'){
+
+            const appointments = await Appointment.find({ patient: req.user.userId })
+                .populate('doctor', 'nom specialite')
+                .sort({ date: 1 });
+
+                res.render('calendar', { appointments: appointments || [] });
+                console.log("appointments",appointments)
+        }else if(req.user.role === 'doctor'){
+            const appointments = await Appointment.find({ doctor: req.user.userId })
+                .populate('patient', 'nom')
+                .sort({ date: 1 });
+
+                res.render('calendar', { appointments: appointments || [] });
+                console.log("appointments",appointments)
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Erreur serveur');
+    }
 };
