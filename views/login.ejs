@@ -135,7 +135,13 @@
                     });
         
                     if (dashboardResponse.ok) {
-                        window.location.href = '/dashboard'; // Redirige seulement si OK
+                        if (result.role === 'doctor') {
+                            window.location.href = '/dashboardDoctor'; // Redirige seulement si OK
+                        } else {
+                            window.location.href = '/dashboard'; // Redirige seulement si OK
+                        }
+                        
+                        //window.location.href = '/dashboard'; // Redirige seulement si OK
                     } else {
                         throw new Error('Accès au dashboard refusé');
                     }

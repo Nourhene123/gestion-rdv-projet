@@ -3,6 +3,7 @@ const axios = require("axios");
 const auth = require('../middlewares/auth.middleware');
 const Appointment = require("../models/Appointment");
 const Doctor = require("../models/doctor");
+const Availability = require("../models/Availability");
 const router = express.Router();
 const authMiddleWare = require('../middlewares/auth.middleware');
 
@@ -64,11 +65,11 @@ router.post("/login", async (req, res) => {
       password
     });
 
-    console.log('Réponse de /api/auth/login:', response.data); // Log pour déboguer
+    console.log('Réponse de /api/auth/login:', response.data);
 
     if (response.data.accessToken) {
-      req.session.user = response.data.user; // Optionnel si tu utilises uniquement JWT
-      req.session.token = response.data.accessToken; // Optionnel
+      req.session.user = response.data.user;
+      req.session.token = response.data.accessToken;
 
       return res.json({
         success: true,
@@ -87,12 +88,10 @@ router.post("/login", async (req, res) => {
   }
 });
 
-
-
 router.get("/dashboard", async (req, res) => {
   try {
     const doctors = await Doctor.find();
-    res.render("dashboard", { user: req.session.user || {}, doctors }); // Utilise session ou un objet vide
+    res.render("dashboard", { user: req.session.user || {}, doctors });
   } catch (error) {
     console.error("Erreur lors de la récupération des docteurs :", error);
     res.status(500).send("Erreur serveur");
@@ -117,41 +116,56 @@ router.get("/doctorDashboard", async (req, res) => {
 
 router.get('/appointments', auth, async (req, res) => {
   try {
-      if (!req.user || !req.user.userId) {
-          return res.status(401).json({ success: false, message: 'Utilisateur non authentifié.' });
-      }
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({ success: false, message: 'Utilisateur non authentifié.' });
+    }
 
-      const appointments = await Appointment.find({ patient: req.user.userId })
-          .populate('doctor')
-          .populate('patient');
+    const appointments = await Appointment.find({ patient: req.user.userId })
+      .populate('doctor')
+      .populate('patient');
 
-      res.status(200).json({ success: true, data: appointments });
+    res.status(200).json({ success: true, data: appointments });
   } catch (error) {
-      console.error('Erreur lors de la récupération des rendez-vous :', error);
-      res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+    console.error('Erreur lors de la récupération des rendez-vous :', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
   }
 });
 
-// Nouvelle route : Récupérer un rendez-vous spécifique par ID (sans restriction d'utilisateur)
 router.get('/appointments/:id', auth, async (req, res) => {
   try {
-      const appointmentId = req.params.id; // Récupérer l'ID depuis les paramètres de l'URL
+    const appointmentId = req.params.id;
 
-      // Trouver le rendez-vous par ID, sans vérifier l'utilisateur connecté
-      const appointment = await Appointment.findById(appointmentId)
-          .populate('doctor') // Peupler les détails du médecin
-          .populate('patient'); // Peupler les détails du patient
+    const appointment = await Appointment.findById(appointmentId)
+      .populate('doctor')
+      .populate('patient');
 
-      if (!appointment) {
-          return res.status(404).json({ success: false, message: 'Rendez-vous non trouvé.' });
-      }
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Rendez-vous non trouvé.' });
+    }
 
-      res.status(200).json({ success: true, data: appointment });
+    res.status(200).json({ success: true, data: appointment });
   } catch (error) {
-      console.error('Erreur lors de la récupération du rendez-vous par ID :', error);
-      res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+    console.error('Erreur lors de la récupération du rendez-vous par ID :', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
   }
 });
+
+// Nouvelle route pour récupérer les disponibilités d'un médecin
+router.get('/availabilities/:doctorId', auth, async (req, res) => {
+  try {
+    const doctorId = req.params.doctorId;
+    const availabilities = await Availability.find({
+      doctor: doctorId,
+      isBooked: false
+    });
+    res.status(200).json({ success: true, data: availabilities });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des disponibilités :', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+  }
+});
+
+// Créer un rendez-vous avec vérification de disponibilité
 router.post('/appointments', auth, async (req, res) => {
   try {
     const { appointmentDate, notes, doctorId } = req.body;
@@ -160,18 +174,106 @@ router.post('/appointments', auth, async (req, res) => {
       return res.status(401).json({ success: false, message: 'Utilisateur non authentifié.' });
     }
 
+    const requestedDate = new Date(appointmentDate);
+    const availability = await Availability.findOne({
+      doctor: doctorId,
+      date: requestedDate,
+      isBooked: false
+    });
+
+    if (!availability) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cette date n\'est pas disponible pour ce médecin.'
+      });
+    }
+
     const newAppointment = new Appointment({
       doctor: doctorId,
-      patient: req.user.userId, // Use the decoded userId from the token
-      date: new Date(appointmentDate),
+      patient: req.user.userId,
+      date: requestedDate,
       notes: notes || '',
       status: 'En attente'
     });
 
+    availability.isBooked = true;
+    await availability.save();
+
     const savedAppointment = await newAppointment.save();
-    res.status(201).json({ success: true, message: 'Rendez-vous réservé avec succès.', data: savedAppointment });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Rendez-vous réservé avec succès.',
+      data: savedAppointment
+    });
   } catch (error) {
     console.error('Erreur lors de la création du rendez-vous :', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+  }
+});
+// Route pour récupérer les disponibilités d'un médecin
+router.get('/availabilities/:doctorId', auth, async (req, res) => {
+  try {
+    const doctorId = req.params.doctorId;
+    const availabilities = await Availability.find({
+      doctor: doctorId,
+      isBooked: false
+    });
+    res.status(200).json({ success: true, data: availabilities });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des disponibilités :', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+  }
+});
+
+// Nouvelle route pour initialiser les disponibilités d'un médecin
+router.post('/availabilities/:doctorId', auth, async (req, res) => {
+  try {
+    const doctorId = req.params.doctorId;
+    const { startDate, endDate, interval } = req.body; // Par exemple : interval en minutes
+
+    if (!startDate || !endDate || !interval) {
+      return res.status(400).json({ success: false, message: 'Veuillez fournir startDate, endDate et interval.' });
+    }
+
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: 'Médecin non trouvé.' });
+    }
+
+    // Générer des dates disponibles
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const availabilities = [];
+    let currentDate = new Date(start);
+
+    while (currentDate <= end) {
+      // Vérifier si cette date n'existe pas déjà
+      const existing = await Availability.findOne({
+        doctor: doctorId,
+        date: currentDate
+      });
+
+      if (!existing) {
+        availabilities.push({
+          doctor: doctorId,
+          date: new Date(currentDate),
+          isBooked: false
+        });
+      }
+      currentDate.setMinutes(currentDate.getMinutes() + interval); // Ajouter l'intervalle
+    }
+
+    // Insérer les nouvelles disponibilités dans la base de données
+    await Availability.insertMany(availabilities);
+
+    res.status(201).json({
+      success: true,
+      message: `Disponibilités ajoutées avec succès pour le Dr. ${doctor.nom}.`,
+      data: availabilities
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout des disponibilités :', error);
     res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
   }
 });
@@ -179,7 +281,6 @@ router.post('/appointments', auth, async (req, res) => {
 // Déconnexion
 router.get("/logout", (req, res) => {
   req.session.destroy(() => {
-    // Clear tokens from localStorage on the client side (handled in frontend)
     res.redirect("/login");
   });
 });
