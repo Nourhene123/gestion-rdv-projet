@@ -79,6 +79,7 @@ exports.login = async (req, res) => {
         }
 
         const { accessToken, refreshToken } = generateTokens(user);
+        
 
         res.json({ success: true, accessToken, refreshToken, user });
     } catch (error) {
@@ -110,6 +111,12 @@ exports.refreshToken = async (req, res) => {
         console.error('Erreur lors du rafraîchissement du token :', error.message);
         return res.status(401).json({ success: false, message: 'Refresh token invalide ou expiré.' });
     }
+     req.session.user = {
+            userId: user._id,
+            role: user.role,
+            email: user.email,
+            nom: user.nom,
+        };
 };
 
 module.exports = exports;

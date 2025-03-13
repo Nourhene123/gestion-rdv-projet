@@ -4,6 +4,7 @@ const auth = require('../middlewares/auth.middleware');
 const Appointment = require("../models/Appointment");
 const Doctor = require("../models/doctor");
 const router = express.Router();
+const authMiddleWare = require('../middlewares/auth.middleware');
 
 // Afficher la page d'inscription
 router.get("/register", (req, res) => {
@@ -97,6 +98,22 @@ router.get("/dashboard", async (req, res) => {
     res.status(500).send("Erreur serveur");
   }
 });
+router.get("/doctorDashboard", async (req, res) => {
+  try {
+    //const doctors = await Doctor.find();
+    //console.log(token)
+    const appointments = await Appointment.find({ doctor: req.session.user, date: { $gte: new Date() } })
+            .populate("patient", "nom email telephone adresse") // Charger les infos du patient
+            .sort("date");
+            
+            console.log("Données des rendez-vous envoyées à la vue :", JSON.stringify(appointments, null, 2));
+            res.render("dashboardDoctor", { doctor: req.session.user || {}, appointments }); // Utilise session ou un objet vide
+  } catch (error) {
+    console.error("Erreur lors de la récupération des docteurs :", error);
+    res.status(500).send("Erreur serveur");
+  }
+});
+
 
 router.get('/appointments', auth, async (req, res) => {
   try {

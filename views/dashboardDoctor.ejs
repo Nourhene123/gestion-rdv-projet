@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Médecin</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">MediPlan - Docteur</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#appointments">Mes Rendez-vous</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#patients">Mes Patients</a></li>
+                    <li class="nav-item"><a class="nav-link text-danger" href="/logout">Déconnexion</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Section Bienvenue -->
+    <section class="container my-4">
+        <h1 class="text-center">Bienvenue, Dr. <%= doctor.nom %> </h1>
+        <p class="text-center text-muted">Gestion de vos rendez-vous et de vos patients.</p>
+    </section>
+
+    <!-- Section Rendez-vous -->
+    <section id="appointments" class="container">
+        <h2 class="mb-3">📅 Mes Rendez-vous</h2>
+
+        <% if (appointments.length > 0) { %>
+            <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th>
+                        <th>Patient</th>
+                        <th>Email</th>
+                        <th>Téléphone</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% appointments.forEach(appointment => { %>
+                        <tr>
+                            <td><%= new Date(appointment.date).toLocaleString('fr-FR') %></td>
+                            <td><%= appointment.patient.nom %></td>
+                            <td><%= appointment.patient.email %></td>
+                            <td><%= appointment.patient.telephone || 'Non renseigné' %></td>
+                            <td><span class="badge bg-info"><%= appointment.status %></span></td>
+                            <td>
+                                <button class="btn btn-success btn-sm confirm-btn" data-id="<%= appointment._id %>">✅ Confirmer</button>
+                                <button class="btn btn-danger btn-sm cancel-btn" data-id="<%= appointment._id %>">❌ Annuler</button>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <p>Aucun rendez-vous prévu.</p>
+        <% } %>
+    </section>
+
+    <!-- Section Patients -->
+    <section id="patients" class="container mt-5">
+        <h2 class="mb-3">👩‍⚕️ Mes Patients</h2>
+
+        <% if (appointments.length > 0) { %>
+            <ul class="list-group">
+                <% let uniquePatients = {}; %>
+                <% appointments.forEach(appointment => { 
+                    let patient = appointment.patient;
+                    if (!uniquePatients[patient._id]) { 
+                        uniquePatients[patient._id] = true; %>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong><%= patient.nom %></strong> - <%= patient.email %>
+                                <p class="mb-0"><small>📞 <%= patient.telephone || 'Non renseigné' %> | 📍 <%= patient.adresse || 'Non renseignée' %></small></p>
+                            </div>
+                        </li>
+                <%  } 
+                }) %>
+            </ul>
+        <% } else { %>
+            <p>Aucun patient enregistré.</p>
+        <% } %>
+    </section>
+
+    <!-- Script JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Fonction pour mettre à jour le statut du rendez-vous
+            const updateAppointmentStatus = async (appointmentId, status) => {
+                try {
+                    const response = await fetch('/appointments/' + appointmentId, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status })
+                    });
+                    if (response.ok) {
+                        alert('Mise à jour réussie !');
+                        location.reload(); // Recharger la page
+                    } else {
+                        alert('Erreur lors de la mise à jour.');
+                    }
+                } catch (error) {
+                    console.error("Erreur :", error);
+                    alert("Erreur serveur.");
+                }
+            };
+
+            // Gérer la confirmation d'un rendez-vous
+            document.querySelectorAll('.confirm-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const appointmentId = button.getAttribute('data-id');
+                    updateAppointmentStatus(appointmentId, 'Confirmé');
+                });
+            });
+
+            // Gérer l'annulation d'un rendez-vous
+            document.querySelectorAll('.cancel-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const appointmentId = button.getAttribute('data-id');
+                    if (confirm("Voulez-vous vraiment annuler ce rendez-vous ?")) {
+                        updateAppointmentStatus(appointmentId, 'Annulé');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
