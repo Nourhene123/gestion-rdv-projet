@@ -9,11 +9,6 @@ exports.createAppointment = async (req, res) => {
     if (!req.user || !req.user.userId) {
       return res.status(401).json({ success: false, message: 'Utilisateur non authentifié.' });
     }
-    console.log("req.user*************************************************************")
-    console.log(req.body)
-    console.log("appointmentDate",appointmentDate)
-    console.log("notes",notes)
-    console.log("doctorId",doctorId)
     const newAppointment = new Appointment({
       doctor: doctorId,
       patient: req.user.userId, // Use the decoded userId from the token
