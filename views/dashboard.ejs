@@ -163,6 +163,14 @@
                 <% if (user.role === 'doctor') { %>
                     <li><a href="/dashboard/doctorDashboard">Docteur Dashboard</a></li>
                 <% } %>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                      Notifications <span class="badge bg-danger" id="notificationCount">0</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" id="notificationList">
+                      <li class="dropdown-item-text">Aucune notification</li>
+                    </ul>
+                  </li>
                 <li><a href="/logout">Déconnexion</a></li> 
             </ul>
         </div>
@@ -350,6 +358,53 @@
                 });
             });
             </script>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                  const userId = '<%= user.userId %>'; // Pass user ID from EJS
+                  const role = '<%= user.role %>'; // Pass user role from EJS
+                  const notificationList = document.getElementById('notificationList');
+                  const notificationCount = document.getElementById('notificationCount');
+                  let notifications = [];
+              
+                  // Only connect WebSocket for doctors
+                  if (role === 'doctor') {
+                    const ws = new WebSocket(`ws://localhost:5000/?userId=${userId}`);
+              
+                    ws.onopen = () => {
+                      console.log('Connected to WebSocket server');
+                    };
+              
+                    ws.onmessage = (event) => {
+                      const data = JSON.parse(event.data);
+                      if (data.type === 'new_appointment') {
+                        const appointment = data.appointment;
+                        const date = new Date(appointment.date).toLocaleString('fr-FR');
+                        notifications.push(`Nouveau rendez-vous le ${date}`);
+                        updateNotificationUI();
+                      }
+                    };
+              
+                    ws.onerror = (error) => {
+                      console.error('WebSocket error:', error);
+                    };
+              
+                    ws.onclose = () => {
+                      console.log('WebSocket connection closed');
+                    };
+                  }
+              
+                  function updateNotificationUI() {
+                    notificationCount.textContent = notifications.length;
+                    if (notifications.length > 0) {
+                      notificationList.innerHTML = notifications
+                        .map((notif) => `<li class="dropdown-item">${notif}</li>`)
+                        .join('');
+                    } else {
+                      notificationList.innerHTML = '<li class="dropdown-item-text">Aucune notification</li>';
+                    }
+                  }
+                });
+              </script>
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
                     const myAppointmentsLink = document.getElementById('myAppointmentsLink');
