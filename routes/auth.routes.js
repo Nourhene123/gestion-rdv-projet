@@ -20,5 +20,9 @@ router.get("/login", (req, res) => {
     res.render("login", { message });
 });
 
+router.get("/logout", (req, res) => {
+    res.clearCookie('accessToken')
+    res.redirect("/login");
+});
 
 module.exports = router;

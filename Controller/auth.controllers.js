@@ -9,13 +9,13 @@ const Patient = require('../models/patient');
 // Function to generate access and refresh tokens
 const generateTokens = (user) => {
     const accessToken = jwt.sign(
-        { userId: user._id.toString(), role: user.role },
-        process.env.JWT_SECRET, // Utilise directement la variable d'environnement
+        { userId: user._id.toString(), role: user.role,nom:user.nom },
+        process.env.JWT_SECRET, 
         { expiresIn: '1h' }
     );
     const refreshToken = jwt.sign(
-        { userId: user._id.toString(), role: user.role },
-        process.env.REFRESH_SECRET, // Utilise directement la variable d'environnement
+        { userId: user._id.toString(), role: user.role,nom:user.nom },
+        process.env.REFRESH_SECRET, 
         { expiresIn: '7d' }
     );
     console.log('Tokens générés:', { accessToken, refreshToken }); // Log pour déboguer
@@ -56,7 +56,7 @@ exports.register = async (req, res) => {
         }
 
         await newUser.save();
-        res.status(201).json({ message: "Utilisateur inscrit avec succès.", user: newUser });
+        res.redirect('/login');
     } catch (error) {
         console.error("Erreur lors de l'inscription :", error);
         res.status(500).json({ message: "Erreur interne du serveur", error: error.message });
@@ -79,9 +79,15 @@ exports.login = async (req, res) => {
         }
 
         const { accessToken, refreshToken } = generateTokens(user);
-        
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true, // Prevents client-side JavaScript access
+            secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+            sameSite: 'Strict', // Prevents CSRF
+            maxAge: 3600 * 1000 // 1 hour in milliseconds
+        });
 
         res.json({ success: true, accessToken, refreshToken, user });
+        
     } catch (error) {
         console.error("Erreur de connexion :", error);
         res.status(500).json({ success: false, message: "Erreur interne du serveur", error: error.message });

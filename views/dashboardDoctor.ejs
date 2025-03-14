@@ -11,14 +11,25 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">MediPlan - Docteur</a>
+            <a class="navbar-brand" href="/dashboard">MediPlan - Docteur</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="#appointments">Mes Rendez-vous</a></li>
+<!--  
+                             <li class="nav-item"><a class="nav-link" href="#appointments">Mes Rendez-vous</a></li>
                     <li class="nav-item"><a class="nav-link" href="#patients">Mes Patients</a></li>
+-->           
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          Notifications <span class="badge bg-danger" id="notificationCount">0</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" id="notificationList" aria-labelledby="navbarDropdown">
+                          <li class="dropdown-item-text">Aucune notification</li>
+                        </ul>
+                      </li>
                     <li class="nav-item"><a class="nav-link text-danger" href="/logout">Déconnexion</a></li>
                 </ul>
             </div>
@@ -100,7 +111,7 @@
             // Fonction pour mettre à jour le statut du rendez-vous
             const updateAppointmentStatus = async (appointmentId, status) => {
                 try {
-                    const response = await fetch('/appointments/' + appointmentId, {
+                    const response = await fetch('/appointments/appointments/' + appointmentId, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status })
@@ -138,3 +149,51 @@
     </script>
 </body>
 </html>
+   <!-- <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const userId = '<%= doctor._id %>'; // Assuming doctor object is passed to EJS
+          const notificationList = document.getElementById('notificationList');
+          const notificationCount = document.getElementById('notificationCount');
+          let notifications = [];
+      
+          const ws = new WebSocket(`ws://localhost:5000/?userId=${userId}`);
+      
+          ws.onopen = () => {
+            console.log('Connected to WebSocket server');
+          };
+      
+          ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'new_appointment') {
+              const appointment = data.appointment;
+              const date = new Date(appointment.date).toLocaleString('fr-FR');
+              notifications.push(`Nouveau rendez-vous le ${date}`);
+              updateNotificationUI();
+            }
+          };
+      
+          ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+          };
+      
+          ws.onclose = () => {
+            console.log('WebSocket connection closed');
+          };
+      
+          function updateNotificationUI() {
+            notificationCount.textContent = notifications.length;
+            if (notifications.length > 0) {
+              notificationList.innerHTML = notifications
+                .map((notif) => `<li class="dropdown-item text-dark">${notif}</li>`)
+                .join('');
+            } else {
+              notificationList.innerHTML = '<li class="dropdown-item-text">Aucune notification</li>';
+            }
+          }
+      
+          // Existing appointment status update code remains here
+        });
+      </script>
+</body>
+</html> -->
+

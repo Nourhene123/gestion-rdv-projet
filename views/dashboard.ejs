@@ -147,25 +147,46 @@
         }
     </style>
 </head>
+
+
 <body>
     <!-- Navbar -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">MediPlan</div>
+            
             <ul class="nav-links">
                 <li><a href="#accueil">Accueil</a></li>
-                <li><a href="#medecins">Médecins</a></li>
-                <li><a href="#reservation">Réserver</a></li>
                 <li><a href="#my-appointments" id="myAppointmentsLink">Mes Réservations</a></li> 
+                <li><a href="/calendar">Calendrier</a></li>
                 <li><a href="#contact">Contact</a></li>
-                <li><a href="/logout">Déconnexion</a></li>
+                <% if (user.role === 'doctor') { %>
+                    <li><a href="/dashboard/doctorDashboard">Docteur Dashboard</a></li>
+                <% } %>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                      Notifications <span class="badge bg-danger" id="notificationCount">0</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" id="notificationList">
+                      <li class="dropdown-item-text">Aucune notification</li>
+                    </ul>
+                  </li>
+                <li><a href="/logout">Déconnexion</a></li> 
             </ul>
         </div>
     </nav>
 
     <!-- Section Bienvenue -->
     <section class="welcome-section">
-        <h1>Bienvenue sur MediPlan</h1>
+        <h1>
+            Bienvenue 
+            <% if (user.role === 'patient') { %>
+                Mr <%= user.nom %>
+            <% } else if (user.role === 'doctor') { %>
+                Dr. <%= user.nom %>
+            <% } %>
+            sur MediPlan
+        </h1>
         <p>Planifiez votre consultation médicale en toute simplicité. Accès rapide aux meilleurs médecins et réservation en quelques clics.</p>
         <a href="#reservation" class="cta-button">Réserver un rendez-vous</a>
     </section>
@@ -178,9 +199,12 @@
             <div class="doctor-card">
                 <h3><%= doctor.nom %></h3>
                 <p><%= doctor.specialite %></p>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#appointmentModal<%= doctor._id %>">
+                <% if (user.role === 'patient') { %>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#appointmentModal<%= doctor._id %>">
                     Réserver un rendez-vous
                 </button>
+                    <% } %>
+                
             </div>
 
            <!-- Modal for Booking Appointment -->
@@ -300,103 +324,156 @@
                 });
             });
         });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const forms = document.querySelectorAll('.appointment-form');
-        
-            forms.forEach(form => {
-                form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-
-                    const doctorId = form.getAttribute('data-doctor-id');
-                    const appointmentDate = form.querySelector('select[name="appointmentDate"]').value;
-                    const notes = form.querySelector('textarea[name="notes"]').value;
-                    const token = localStorage.getItem('accessToken');
-
-                    if (!token) {
-                        alert('Vous devez être connecté pour réserver un rendez-vous.');
-                        window.location.href = '/login';
-                        return;
-                    }
-
-                    if (!appointmentDate) {
-                        const errorDiv = form.querySelector('.text-danger');
-                        errorDiv.textContent = 'Veuillez sélectionner une date et une heure.';
-                        errorDiv.style.display = 'block';
-                        return;
-                    }
-
-                    try {
-                        const response = await fetch('/appointments', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({
-                                doctorId,
-                                appointmentDate,
-                                notes
-                            })
-                        });
-
-                        const result = await response.json();
-
-                        if (response.ok) {
-                            alert('Rendez-vous réservé avec succès !');
-                            form.reset();
-                            bootstrap.Modal.getInstance(form.closest('.modal')).hide();
-                        } else {
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const forms = document.querySelectorAll('.appointment-form');
+            
+                forms.forEach(form => {
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault(); // Empêche le rechargement de la page
+            
+                        // Récupérer les données du formulaire
+                        const doctorId = form.getAttribute('data-doctor-id');
+                        const appointmentDate = form.querySelector('input[name="appointmentDate"]').value;
+                        const notes = form.querySelector('textarea[name="notes"]').value;
+                        const patientName = form.querySelector('input[name="patientName"]').value;
+                        const token = localStorage.getItem('accessToken');
+            
+                        // Vérifier si l'utilisateur est connecté
+                        if (!token) {
+                            alert('Vous devez être connecté pour réserver un rendez-vous.');
+                            window.location.href = '/login';
+                            return;
+                        }
+            
+                        // Vérifier si la date est valide
+                        if (!appointmentDate) {
                             const errorDiv = form.querySelector('.text-danger');
-                            errorDiv.textContent = result.message || 'Erreur lors de la réservation';
+                            errorDiv.textContent = 'Veuillez sélectionner une date et une heure.';
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+            
+                        try {
+                            const response = await fetch('/appointments/create', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                    doctorId,
+                                    appointmentDate,
+                                    notes
+                                })
+                            });
+            
+                            const result = await response.json();
+            
+                            if (response.ok) {
+                                alert('Rendez-vous réservé avec succès !');
+                                form.reset(); // Réinitialise le formulaire
+                                bootstrap.Modal.getInstance(form.closest('.modal')).hide(); // Ferme la modale
+                            } else {
+                                const errorDiv = form.querySelector('.text-danger');
+                                errorDiv.textContent = result.message || 'Erreur lors de la réservation';
+                                errorDiv.style.display = 'block';
+                            }
+                        } catch (error) {
+                            console.error('Erreur lors de la réservation :', error);
+                            const errorDiv = form.querySelector('.text-danger');
+                            errorDiv.textContent = 'Erreur serveur. Veuillez réessayer.';
                             errorDiv.style.display = 'block';
                         }
-                    } catch (error) {
-                        console.error('Erreur lors de la réservation :', error);
-                        const errorDiv = form.querySelector('.text-danger');
-                        errorDiv.textContent = 'Erreur serveur. Veuillez réessayer.';
-                        errorDiv.style.display = 'block';
-                    }
+                    });
                 });
             });
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const myAppointmentsLink = document.getElementById('myAppointmentsLink');
-            const appointmentsList = document.getElementById('appointmentsList');
-        
-            myAppointmentsLink.addEventListener('click', async (e) => {
-                e.preventDefault();
-
-                const token = localStorage.getItem('accessToken');
-                if (!token) {
-                    alert('Vous devez être connecté pour voir vos réservations.');
-                    window.location.href = '/login';
-                    return;
-                }
-
-                try {
-                    const response = await fetch('/appointments', {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
+            </script>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                  const userId = '<%= user.userId %>'; // Pass user ID from EJS
+                  const role = '<%= user.role %>'; // Pass user role from EJS
+                  const notificationList = document.getElementById('notificationList');
+                  const notificationCount = document.getElementById('notificationCount');
+                  let notifications = [];
+              
+                  // Only connect WebSocket for doctors
+                  if (role === 'doctor') {
+                    const ws = new WebSocket(`ws://localhost:5000/?userId=${userId}`);
+              
+                    ws.onopen = () => {
+                      console.log('Connected to WebSocket server');
+                    };
+              
+                    ws.onmessage = (event) => {
+                      const data = JSON.parse(event.data);
+                      if (data.type === 'new_appointment') {
+                        const appointment = data.appointment;
+                        const date = new Date(appointment.date).toLocaleString('fr-FR');
+                        notifications.push(`Nouveau rendez-vous le ${date}`);
+                        updateNotificationUI();
+                      }
+                    };
+              
+                    ws.onerror = (error) => {
+                      console.error('WebSocket error:', error);
+                    };
+              
+                    ws.onclose = () => {
+                      console.log('WebSocket connection closed');
+                    };
+                  }
+              
+                  function updateNotificationUI() {
+                    notificationCount.textContent = notifications.length;
+                    if (notifications.length > 0) {
+                      notificationList.innerHTML = notifications
+                        .map((notif) => `<li class="dropdown-item">${notif}</li>`)
+                        .join('');
+                    } else {
+                      notificationList.innerHTML = '<li class="dropdown-item-text">Aucune notification</li>';
+                    }
+                  }
+                });
+              </script>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const myAppointmentsLink = document.getElementById('myAppointmentsLink');
+                    const appointmentsList = document.getElementById('appointmentsList');
+                
+                    myAppointmentsLink.addEventListener('click', async (e) => {
+                        e.preventDefault(); // Empêche le comportement par défaut du lien
+                
+                        const token = localStorage.getItem('accessToken');
+                        if (!token) {
+                            alert('Vous devez être connecté pour voir vos réservations.');
+                            window.location.href = '/login';
+                            return;
                         }
-                    });
-
-                    const result = await response.json();
-
-                    if (response.ok) {
-                        appointmentsList.innerHTML = '';
-
-                        if (result.data.length === 0) {
-                            appointmentsList.innerHTML = '<p>Aucune réservation trouvée.</p>';
-                        } else {
-                            result.data.forEach(appointment => {
-                                const date = new Date(appointment.date).toLocaleString('fr-FR');
-                                const doctorName = appointment.doctor.nom;
-                                const status = appointment.status;
+                
+                        try {
+                            const response = await fetch('/appointments/appointments', {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+                
+                            const result = await response.json();
+                            console .log('Résultat de /appointments/appointments:', result);
+                
+                            if (response.ok) {
+                                // Vider la liste actuelle
+                                appointmentsList.innerHTML = '';
+                
+                                if (result.data.length === 0) {
+                                    appointmentsList.innerHTML = '<p>Aucune réservation trouvée.</p>';
+                                } else {
+                                    result.data.forEach(appointment => {
+    const date = new Date(appointment.date).toLocaleString('fr-FR');
+    const doctorName = appointment.doctor.nom;
+    const status = appointment.status;
 
                                 const appointmentItem = `
                                     <div class="card mb-3">
